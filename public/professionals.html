@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Profissionais</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Gestão de Profissionais de Saúde</h1>
+
+        <!-- Alertas de feedback -->
+        <div id="alertContainer" style="display: none;" class="alert"></div>
+
+        <!-- Formulário de criação -->
+        <div class="card mb-4">
+            <div class="card-header">Novo Profissional</div>
+            <div class="card-body">
+                <form id="createProfessionalForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="specialization" class="form-label">Especialização</label>
+                        <input type="text" class="form-control" id="specialization" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Telefone</label>
+                        <input type="text" class="form-control" id="phone" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Cadastrar Profissional</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Listagem de profissionais -->
+        <div class="card mb-4">
+            <div class="card-header">Profissionais</div>
+            <div class="card-body">
+                <table class="table table-striped" id="professionalsTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Especialização</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal de edição -->
+        <div class="modal fade" id="editProfessionalModal" tabindex="-1" aria-labelledby="editProfessionalModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editProfessionalModalLabel">Editar Profissional</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editProfessionalForm">
+                            <input type="hidden" id="editProfessionalId">
+                            <div class="mb-3">
+                                <label for="editName" class="form-label">Nome</label>
+                                <input type="text" class="form-control" id="editName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editSpecialization" class="form-label">Especialização</label>
+                                <input type="text" class="form-control" id="editSpecialization" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editEmail" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editPhone" class="form-label">Telefone</label>
+                                <input type="text" class="form-control" id="editPhone" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const professionalsTable = document.getElementById('professionalsTable').querySelector('tbody');
+            const alertContainer = document.getElementById('alertContainer');
+
+            // Função para exibir alertas
+            function showAlert(message, type) {
+                alertContainer.innerText = message;
+                alertContainer.className = `alert alert-${type}`;
+                alertContainer.style.display = 'block';
+                setTimeout(() => alertContainer.style.display = 'none', 3000);
+            }
+
+            // Função para carregar profissionais
+            function loadProfessionals() {
+                fetch('/src/routes/api.php?type=professional')
+                    .then(response => response.json())
+                    .then(data => {
+                        professionalsTable.innerHTML = '';
+                        data.forEach(professional => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${professional.name}</td>
+                                <td>${professional.specialization}</td>
+                                <td>${professional.email}</td>
+                                <td>${professional.phone}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm" onclick="editProfessional(${professional.id})">Editar</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteProfessional(${professional.id})">Excluir</button>
+                                </td>
+                            `;
+                            professionalsTable.appendChild(row);
+                        });
+                    });
+            }
+
+            // Função para criar um novo profissional
+            document.getElementById('createProfessionalForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const name = document.getElementById('name').value;
+                const specialization = document.getElementById('specialization').value;
+                const email = document.getElementById('email').value;
+                const phone = document.getElementById('phone').value;
+
+                fetch('/src/routes/api.php?type=professional', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, specialization, email, phone })
+                }).then(() => {
+                    showAlert("Profissional cadastrado com sucesso!", "success");
+                    loadProfessionals();
+                }).catch(() => showAlert("Erro ao cadastrar o profissional.", "danger"));
+            });
+
+            // Função para iniciar a edição de um profissional
+            window.editProfessional = function(id) {
+                fetch(`/src/routes/api.php?type=professional&id=${id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('editProfessionalId').value = data.id;
+                        document.getElementById('editName').value = data.name;
+                        document.getElementById('editSpecialization').value = data.specialization;
+                        document.getElementById('editEmail').value = data.email;
+                        document.getElementById('editPhone').value = data.phone;
+                        new bootstrap.Modal(document.getElementById('editProfessionalModal')).show();
+                    });
+            }
+
+            // Função para salvar alterações no profissional
+            document.getElementById('editProfessionalForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const id = document.getElementById('editProfessionalId').value;
+                const name = document.getElementById('editName').value;
+                const specialization = document.getElementById('editSpecialization').value;
+                const email = document.getElementById('editEmail').value;
+                const phone = document.getElementById('editPhone').value;
+
+                fetch(`/src/routes/api.php?type=professional&id=${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, specialization, email, phone })
+                }).then(() => {
+                    showAlert("Profissional atualizado com sucesso!", "success");
+                    loadProfessionals();
+                }).catch(() => showAlert("Erro ao atualizar o profissional.", "danger"));
+            });
+
+            // Função para excluir um profissional
+            window.deleteProfessional = function(id) {
+                fetch(`/src/routes/api.php?type=professional&id=${id}`, {
+                    method: 'DELETE'
+                }).then(() => {
+                    showAlert("Profissional excluído com sucesso!", "success");
+                    loadProfessionals();
+                }).catch(() => showAlert("Erro ao excluir o profissional.", "danger"));
+            }
+
+            loadProfessionals();
+        });
+    </script>
+</body>
+</html>

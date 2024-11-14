@@ -1,51 +1,39 @@
 <?php
-namespace Controllers;
 
-use Models\Professional;
-use Config\Database;
+use PHPUnit\Framework\TestCase;
 
-class ProfessionalController {
-    private $model;
+class ProfessionalControllerTest extends TestCase
+{
+    protected $controller;
 
-    public function __construct() {
-        $database = new Database();
-        $db = $database->getConnection();
-        $this->model = new Professional($db);
+    protected function setUp(): void
+    {
+        $this->controller = new ProfessionalController();
     }
 
-    public function create($data) {
-        if (empty($data['name']) || empty($data['specialization']) || empty($data['email']) || empty($data['phone'])) {
-            return ["success" => false, "message" => "Todos os campos são obrigatórios"];
-        }
-
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            return ["success" => false, "message" => "Email inválido"];
-        }
-
-        if ($this->model->create($data)) {
-            return ["success" => true, "message" => "Profissional cadastrado com sucesso"];
-        } else {
-            return ["success" => false, "message" => "Falha ao cadastrar o profissional"];
-        }
+    public function testCreate()
+    {
+        $data = ["name" => "Teste", "specialization" => "Cardiologia", "email" => "teste@exemplo.com", "phone" => "99999-9999"];
+        $result = $this->controller->create($data);
+        $this->assertTrue($result["success"]);
     }
 
-    public function read() {
-        return $this->model->read();
+    public function testRead()
+    {
+        $result = $this->controller->read();
+        $this->assertIsArray($result);
     }
 
-    public function update($id, $data) {
-        if ($this->model->update($id, $data)) {
-            return ["success" => true, "message" => "Profissional atualizado com sucesso"];
-        } else {
-            return ["success" => false, "message" => "Falha ao atualizar o profissional"];
-        }
+    public function testUpdate()
+    {
+        $data = ["name" => "Atualizado", "specialization" => "Pediatria", "email" => "atualizado@exemplo.com", "phone" => "88888-8888"];
+        $result = $this->controller->update(1, $data);
+        $this->assertTrue($result["success"]);
     }
 
-    public function delete($id) {
-        if ($this->model->delete($id)) {
-            return ["success" => true, "message" => "Profissional excluído com sucesso"];
-        } else {
-            return ["success" => false, "message" => "Falha ao excluir o profissional"];
-        }
+    public function testDelete()
+    {
+        $result = $this->controller->delete(1);
+        $this->assertTrue($result["success"]);
     }
 }
